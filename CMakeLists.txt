@@ -392,6 +392,8 @@ if(EMSCRIPTEN)
   option_string(SDL_EMSCRIPTEN_PERSISTENT_PATH  "Path to mount Emscripten IDBFS at startup or '' to disable" "")
 endif()
 
+set_option(SDL_DYNAPI              "Enable SDL_InitDynamicAPI" ON) # made optional to avoid dlopen() when OFF
+
 set(SDL_VENDOR_INFO "" CACHE STRING "Vendor name and/or version to add to SDL_REVISION")
 
 cmake_dependent_option(SDL_SHARED "Build a shared version of the library" ${SDL_SHARED_DEFAULT} ${SDL_SHARED_AVAILABLE} OFF)
@@ -1375,7 +1377,11 @@ endif()
 if(UNIX OR APPLE)
   # Relevant for Unix/Darwin only
   set(DYNAPI_NEEDS_DLOPEN 1)
-  CheckDLOPEN()
+  if (SDL_DYNAPI) # made optional to allow avoiding dlopen for minimal builds (without even GPU access !)
+    CheckDLOPEN()
+  else()
+    set(HAVE_DLOPEN 0)
+  endif()
   if(HAVE_DLOPEN)
     set(SDL_LOADSO_DLOPEN 1)
     sdl_glob_sources(
@@ -1383,6 +1389,8 @@ if(UNIX OR APPLE)
       "${SDL3_SOURCE_DIR}/src/loadso/dlopen/*.h"
     )
     set(HAVE_SDL_LOADSO TRUE)
+  else()
+    set(HAVE_SDL_LOADSO FALSE)
   endif()
 endif()
 
@@ -1840,11 +1848,15 @@ elseif(UNIX AND NOT APPLE AND NOT RISCOS AND NOT HAIKU)
   endif()
 
   if(SDL_TRAY)
-    sdl_glob_sources(
-      "${SDL3_SOURCE_DIR}/src/tray/unix/*.c"
-      "${SDL3_SOURCE_DIR}/src/tray/unix/*.h"
-    )
-    set(HAVE_SDL_TRAY TRUE)
+    if (HAVE_DLOPEN)
+      sdl_glob_sources(
+        "${SDL3_SOURCE_DIR}/src/tray/unix/*.c"
+        "${SDL3_SOURCE_DIR}/src/tray/unix/*.h"
+      )
+      set(HAVE_SDL_TRAY TRUE)
+    else()
+      set(HAVE_SDL_TRAY FALSE)
+    endif()
   endif()
 
   if(UNIX)
