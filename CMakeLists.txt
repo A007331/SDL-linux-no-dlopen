@@ -381,6 +381,10 @@ set_option(SDL_CLANG_TIDY          "Run clang-tidy static analysis" OFF)
 set_option(SDL_GPU_DXVK            "Build SDL_GPU with DXVK support" OFF)
 
 set_option(SDL_DYNAPI              "Enable SDL_InitDynamicAPI" ON) # made optional to avoid dlopen() when OFF
+# this makes the SDL_PrintSummary macro print the correct result, but actual effect depends on HAVE_DLOPEN, see below
+if(SDL_DYNAPI)
+  set(HAVE_DYNAPI ON)
+endif()
 
 set(SDL_VENDOR_INFO "" CACHE STRING "Vendor name and/or version to add to SDL_REVISION")
 
